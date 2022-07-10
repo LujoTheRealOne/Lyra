@@ -40,7 +40,7 @@ async def status_task():
         mainserver = client.get_guild(994631881918251028)
         channel = client.get_channel(994636981512458350)
         await channel.edit(name=f'♤・{mainserver.member_count}')
-        await client.change_presence(activity=discord.Game('+help | Slash Commands'), status=discord.Status.online)
+        await client.change_presence(activity=discord.Game('+help | Metropole'), status=discord.Status.online)
         await asyncio.sleep(15)
         await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f"{mainserver.member_count} Usern"))
         await asyncio.sleep(15)
