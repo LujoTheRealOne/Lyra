@@ -891,6 +891,86 @@ async def on_voice_state_update(member, before, after):
             await newchannel.delete()
 
 
+snipe_message_content = None
+snipe_message_author = None
+snipe_message_time = None
+edit_snipe_message_content_before = None
+edit_snipe_message_content_after = None
+edit_snipe_message_author = None
+edit_snipe_message_time = None
+
+@client.event
+async def on_message_edit(before, after):
+
+    if before.author.bot:
+        return
+    
+    if 'http' in after.content:
+        return
+    
+    if '.gg/' in after.content:
+        return
+
+    global edit_snipe_message_content_before
+    global edit_snipe_message_content_after
+    global edit_snipe_message_author
+    global edit_snipe_message_time
+
+    edit_snipe_message_content_before = before.content
+    edit_snipe_message_content_after = after.content
+    edit_snipe_message_author = after.author
+    edit_snipe_message_time = after.edited_at
+
+@client.event
+async def on_message_delete(message):
+
+    if message.author.bot:
+        return
+    
+    if 'http' in message.content:
+        return
+    
+    if '.gg/' in message.content:
+        return
+
+    global snipe_message_content
+    global snipe_message_author
+    global snipe_message_time
+    #with open("./JOBCENTER/jc_blacklist.json") as f:
+    #    blacklist = json.load(f)
+    snipe_message_content = message.content
+    snipe_message_author = message.author
+    snipe_message_time = message.created_at
+    #for bad_word in blacklist["words"]:
+    #    if bad_word in message.content.lower():
+    #        snipe_message_content = None
+    #        snipe_message_author = None
+    #        snipe_message_time = None
+
+    
+@client.command(name='snipe')
+@commands.cooldown(1, 30, type=BucketType.user)
+async def snipe(ctx):
+    if snipe_message_content != None:
+        embed = discord.Embed(description=snipe_message_content, timestamp=snipe_message_time, color=ctx.guild.me.color)
+        embed.set_author(name=snipe_message_author, icon_url=snipe_message_author.avatar_url)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.reply('Es gibt nichts zu snipen.')
+
+@client.command(name='editsnipe')
+@commands.cooldown(1, 30, type=BucketType.user)
+async def editsnipe(ctx):
+    if edit_snipe_message_content_after != None:
+        embed = discord.Embed(timestamp=edit_snipe_message_time, color=ctx.guild.me.color)
+        embed.add_field(name="Before:", value=edit_snipe_message_content_before, inline=False)
+        embed.add_field(name="After", value=edit_snipe_message_content_after, inline=False)
+        embed.set_author(name=edit_snipe_message_author, icon_url=edit_snipe_message_author.avatar_url)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send('Es gibt nichts zu snipen.')
+
+
 @client.event
 async def on_member_join(member):
     channel = client.get_channel(994631882362855514)
