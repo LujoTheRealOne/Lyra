@@ -599,6 +599,89 @@ async def penis_self(ctx, error):
         await ctx.send(embed=embed)
 
 
+@client.command(name='kick')
+async def kick(ctx, member: discord.Member, *, reason=None):
+    if ctx.author.guild_permissions.kick_members:
+        if member == ctx.message.author:
+            await ctx.send("You can not kick yourself!")
+            return
+        if member.top_role >= ctx.author.top_role:
+            await ctx.send("This person is too powerful to kick.")
+            return
+        if reason == None:
+            reason = "No reason given."
+        message = f"You ware **kicked** from **{ctx.guild.name}** by **{ctx.author}**.\r\n**Reason:** {reason}"
+        try:
+            await member.send(message)
+        except:
+            pass
+        await ctx.guild.kick(member, reason=reason)
+        embed = discord.Embed(description=f"<a:mp_true:995790931393523862> **{member}** was kicked from the Server.\r\n**Reason:** {reason}", colour=0xE31316)
+        await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed(description='<a:mp_false:995790935684296825> I am sorry, but you are not allowed to do that!\r\n'
+                                          '\r\n'
+                                          '__Fehlende Berechtigung:__ **Mitglieder kicken**', color=0xff0000)
+        await ctx.send(embed=embed)
+        
+@kick.error
+async def kick_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title='**An error has occurred.**', description='<a:mp_false:995790935684296825> **Please mention a user.**', color=0xff0000)
+        embed.add_field(name='Usage', value=f'`+kick <user> [reason]`')
+        await ctx.send(embed=embed)
+
+
+@client.command()
+async def ban(ctx, member: discord.User, *, reason=None):
+    if ctx.author.guild_permissions.kick_members:
+        if member == ctx.message.author:
+            await ctx.send("You can not ban yourself!")
+            return
+        if member in ctx.guild.members:
+            user = ctx.guild.get_member(member.id)
+            if user.top_role >= ctx.author.top_role:
+                await ctx.send("This Person is to powerful to ban.")
+                return
+        if reason == None:
+            reason = "No reason given."
+        message = f"You ware **banned** from **{ctx.guild.name}** by **{ctx.author}**.\r\n**Reason:** {reason}"
+        try:
+            await member.send(message)
+        except:
+            pass
+        embed = discord.Embed(description=f"**{member}** was banned from the Server.\r\n**Reason:** {reason}", colour=0xE31316)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=client.user.name, icon_url=client.user.avatar_url)
+        await ctx.guild.ban(member, reason=reason)
+        await ctx.send(embed=embed)
+
+@ban.error
+async def ban_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title='**An error has occurred.**', description='<a:mp_false:995790935684296825> **Please mention a user.**', color=0xff0000)
+        embed.add_field(name='Usage', value=f'`+ban <user> [reason]`')
+        await ctx.send(embed=embed)
+
+
+@client.command()
+async def unban(ctx, id: int, reason=None):
+    if ctx.author.guild_permissions.kick_members:
+        user = await client.fetch_user(id)
+        await ctx.guild.unban(user, reason=reason)
+        embed = discord.Embed(description=f"**{user}** was unbanned successfully.", colour=0xE31316)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=client.user.name, icon_url=client.user.avatar_url)
+        await ctx.send(embed=embed)
+
+@unban.error
+async def unban_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title='**An error has occurred.**', description='<a:mp_false:995790935684296825> **Please mention a user.**', color=0xff0000)
+        embed.add_field(name='Usage', value=f'`+unban <user> [reason]`')
+        await ctx.send(embed=embed)
+
+
 @client.command(name='setupmute')
 async def setupmute(ctx):
     if ctx.author.guild_permissions.administrator:
