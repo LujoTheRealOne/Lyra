@@ -701,7 +701,22 @@ async def ticket(ctx, cmd):
                 data["ticket-channel-ids"].remove(ctx.channel.id)
                 await ctx.channel.delete()
 
+@client.command()
+async def s(ctx):
+    try:
+        contents, author, channel_name, time = bot.sniped_messages[ctx.guild.id]
+        
+    except:
+        await ctx.channel.send("couldn't find a message to snipe")
+        return
 
+    embed = discord.Embed(description=contents, color=discord.Color.dark_gold(), timestamp=time)
+    embed.set_author(name=f"{author.name}#{author.discriminator}", icon_url=author.avatar_url)
+    embed.set_footer(text=f"Deleted in : #{channel_name}")
+
+    await ctx.channel.send(embed=embed)
+    
+    
 @client.event
 async def on_raw_reaction_add(reaction):
     user = reaction.member
