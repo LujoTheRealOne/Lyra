@@ -417,18 +417,10 @@ async def role(ctx, member: discord.Member, role: discord.Role, time: int=None):
                     embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
                     await ctx.send(embed=embed)
                 else:
-                    if time != None:
-                        await member.add_roles(role)
-                        embed = discord.Embed(description=f'`✅` {role.mention} was added to {member.mention} for ** {time} s **.', color=ctx.guild.me.color)
-                        embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
-                        await ctx.send(embed=embed)
-                        await asyncio.sleep(time)
-                        await member.remove_roles(role)
-                    else:
-                        await member.add_roles(role)
-                        embed = discord.Embed(description=f'`✅` {role.mention} was added to {member.mention}.', color=ctx.guild.me.color)
-                        embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
-                        await ctx.send(embed=embed)
+                    await member.add_roles(role)
+                    embed = discord.Embed(description=f'`✅` {role.mention} was added to {member.mention}.', color=ctx.guild.me.color)
+                    embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
+                    await ctx.send(embed=embed)
             else:
                 embed = discord.Embed(description=f'`❌` This role is too powerful to manage.\r\nPlease ask a senior team member or the owner for help.', color=0xff0000)
                 embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
@@ -1134,7 +1126,7 @@ async def editsnipe(ctx):
 async def on_member_join(member):
     channel = client.get_channel(994631882362855514)
     await channel.send(f'Hey {member.mention}, welcome to **{member.guild.name}**! <a:mp_cheers:995716627528163349>')
-    memberrole = client.get_guild(member.guild).get_role(994642978301808700)
+    memberrole = client.get_guild(member.guild.id).get_role(994642978301808700)
     await member.add_roles(memberrole)
     
     #with open('./JOBCENTER/jc_lvl_users.json', 'r') as f:
