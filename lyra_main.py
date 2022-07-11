@@ -32,6 +32,9 @@ guild_ids = [994631881918251028]
 async def on_ready():
     DiscordComponents(client)
     print(f'{client.user} ist jetzt online und startklar!')
+    #embed = discord.Embed(color=0x2F3136)
+    #embed.set_image(url="https://media.discordapp.net/attachments/862731059316391976/868517975584563220/ezgif-6-fefbe6e4d17d.png")
+    #await client.get_channel(995778452466700349).send(embed=embed)
     client.loop.create_task(status_task())
     
 
@@ -74,8 +77,57 @@ async def on_message(message):
                 await message.author.send(f"{message.author.mention} please only send pictures in this channel!")
             except:
                 await message.author.send(f"{message.author.mention} please only send pictures in this channel!", delete_after=5)
+    #with open('./ChillHood/lvl_users.json', 'r') as f:
+    #    users = json.load(f)
+    #await update_data(users, message.author)
+    #await add_experience(users, message.author, 5)
+    #await level_up(users, message.author, message)
+    #with open('./ChillHood/lvl_users.json', 'w') as f:
+    #    json.dump(users, f)
     await client.process_commands(message)
-    
+
+#async def update_data(users, user):
+#    if not f'{user.id}' in users:
+#        users[f'{user.id}'] = {}
+#        users[f'{user.id}']['experience'] = 0
+#        users[f'{user.id}']['level'] = 1
+#        
+#async def add_experience(users, user, exp):
+#    users[f'{user.id}']['experience'] += exp
+#
+#async def level_up(users, user, message):
+#    with open('./ChillHood/level.json', 'r') as g:
+#        levels = json.load(g)
+#    experience = users[f'{user.id}']['experience']
+#    lvl_start = users[f'{user.id}']['level']
+#    lvl_end = int(experience ** (1 / 4))
+#    if lvl_start < lvl_end:
+#        #channel = client.get_channel(862733020807954452)
+#        #embed = discord.Embed(description=f'**CONGRATS**\r\n You are now level **{lvl_end}**!', color=message.guild.me.color)
+#        #embed.set_author(name=message.author.name)
+#        #embed.set_thumbnail(url=message.author.avatar_url)
+#        #embed.set_footer(text=message.guild.name)
+#        #await channel.send(embed=embed)
+#        await message.channel.send(f'Congrats! You are now level **{lvl_end}**! <a:ch_villager:862740080215851038>')
+#        users[f'{user.id}']['level'] = lvl_end
+#
+#@client.command(aliases=['lvl', 'rank', 'r'])
+#async def level(ctx, member: discord.Member = None):
+#    if not member:
+#        id = ctx.message.author.id
+#        with open('./ChillHood/lvl_users.json', 'r') as f:
+#            users = json.load(f)
+#        lvl = users[str(id)]['level']
+#        exp = users[str(id)]['experience']
+#        await ctx.send(f'You are currently on Lvl **{lvl}** `{exp}xp`!')
+#    else:
+#        id = member.id
+#        with open('./ChillHood/lvl_users.json', 'r') as f:
+#            users = json.load(f)
+#        lvl = users[str(id)]['level']
+#        exp = users[str(id)]['experience']
+#        await ctx.send(f'**{member}** is currently on Lvl **{lvl}** `{exp}xp`!')
+        
 
 @client.command(name='lock')
 async def lock(ctx, channel: discord.TextChannel=None):
@@ -112,8 +164,11 @@ async def unlock(ctx, channel: discord.TextChannel=None):
                                           "__Missing permission:__ **manage messages**", color=0xff0000)
         await ctx.send(embed=embed)
 
-#@client.event
-#async def on_command_error(ctx, error):
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        em = discord.Embed(title=f"chill bro!",description=f"You're going too fast!\r\nTry again in **{error.retry_after:.0f}s**.", color=0xff0000)#{error.retry_after:.2f}s
+        await ctx.send(embed=em)
 #    if isinstance(error, commands.CommandNotFound):
 #        embed = discord.Embed(title='**An error has occurred.**', description=f'**Dieser Befehl (`{ctx.message.content}`) wurde nicht gefunden. Bitte überprüfe deine Rechtschreibung und versuche es erneut.**', color=0xff0000)
 #        embed.set_footer(text='Für eine Liste aller Befehle, führe bitte den Befehl +help aus.')
@@ -415,11 +470,6 @@ async def avatar(ctx, user: discord.User):
         embed.set_author(name=ctx.author.name + '#' + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
-@avatar.error
-async def avatar_self(ctx, error):
-    if isinstance(error, commands.CommandOnCooldown):
-        em = discord.Embed(title=f"chill bro!",description=f"You're going too fast!\r\nTry again in **{error.retry_after:.0f}s**.", color=0xff0000)#{error.retry_after:.2f}s
-        await ctx.send(embed=em)
 
 @client.command(name='userinfo', aliases=['whois'])
 @commands.cooldown(1, 10, type=BucketType.user)
@@ -473,11 +523,6 @@ async def userinfo(ctx, user: discord.User):
             await msg.delete()
             await ctx.message.delete()
 
-@userinfo.error
-async def userinfo_self(ctx, error):
-    if isinstance(error, commands.CommandOnCooldown):
-        em = discord.Embed(title=f"chill bro!",description=f"You're going too fast!\r\nTry again in **{error.retry_after:.0f}s**.", color=0xff0000)#{error.retry_after:.2f}s
-        await ctx.send(embed=em)
 
 
 @client.command(name='addreaction', aliases=['react'])
@@ -552,9 +597,6 @@ async def penis_self(ctx, error):
         embed = discord.Embed(title="Penis", description=f"{ctx.author.name}'s Penis\r\n"
                                                               "8" + random.choice(penis) + "D", color=ctx.guild.me.color)
         await ctx.send(embed=embed)
-    if isinstance(error, commands.CommandOnCooldown):
-        em = discord.Embed(title=f"chill bro!",description=f"You're going too fast!\r\nTry again in **{error.retry_after:.0f}s**.", color=0xff0000)#{error.retry_after:.2f}s
-        await ctx.send(embed=em)
 
 
 @client.command(name='setupmute')
@@ -644,6 +686,40 @@ async def connect(ctx):
 @client.command()
 async def disconnect(ctx):
     await ctx.voice_client.disconnect()
+
+
+#@client.command(pass_context=True)
+#async def play(ctx, url):
+#    voice = ctx.guild.voice_clients
+#    ydl_opts = {
+#        'format': 'bestaudio/best',
+#        'postprocessors': [{
+#            'key': 'FFmpegExtractAudio',
+#            'preferredcodec': 'mp3',
+#            'preferredquality': '192',
+#        }],
+#    }
+#    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+#        ydl.download([url])
+#    for file in os.listdir("./"):
+#        if file.endswith(".mp3"):
+#            os.rename(file, 'song.mp3')
+#    voice.play(discord.FFmpegPCMAudio("song.mp3"))
+#    voice.volume = 100
+#    voice.is_playing()
+
+
+#@client.command(pass_context=True)
+#async def play(ctx, url):
+#    #voice_client = ctx.guild.voice_client
+#    server = ctx.guild
+#    #voice_client = client.voice_client_in(server)
+#    player = await ctx.voice_client.create_ytdl_player(url)
+#    players[server.id] = player
+#    player.start()
+
+
+
 
 
 ### Ticket-System
@@ -977,6 +1053,14 @@ async def on_member_join(member):
     await channel.send(f'Hey {member.mention}, welcome to **{member.guild.name}**! <a:mp_cheers:995716627528163349>')
     memberrole = client.get_guild(member.guild).get_role(994642978301808700)
     await member.add_roles(memberrole)
+    
+    #with open('./JOBCENTER/jc_lvl_users.json', 'r') as f:
+    #    users = json.load(f)
+#
+    #await update_data(users, member)
+#
+    #with open('./JOBCENTER/jc_lvl_users.json', 'w') as f:
+    #    json.dump(users, f)
 
 
 client.run(TOKEN)
