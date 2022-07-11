@@ -1,25 +1,33 @@
+from time import strftime
 import discord
 import asyncio
+import functools
+import itertools
+import math
 import random
+from random import randrange
+import requests
 import json
+import urllib
 import os
 import re
 import logging
+import youtube_dl
+import DiscordUtils
 from discord import guild
 from discord import Guild
 from discord import Member
 from discord import Intents
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps, ImageChops
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps, ImageChops, ImageColor
 from io import BytesIO
 from datetime import datetime
 from datetime import timedelta, timezone
 from discord import colour, Spotify
-from discord.embeds import Embed, EmbedProxy
 from discord.ext import commands
 from discord.ext.commands import Bot, BucketType
-from discord_components import DiscordComponents, Button, ButtonStyle, InteractionType
+from discord_components import DiscordComponents, Button, ButtonStyle, InteractionType, Select, SelectOption, Interaction
 from discord_slash import SlashCommand, SlashContext
-from discord_slash.utils.manage_commands import create_option
+from discord_slash.utils.manage_commands import create_option, create_choice
 
 TOKEN = None
 client = commands.Bot(command_prefix = commands.when_mentioned_or('+'), case_insensitive=True, intents=Intents.all())
@@ -134,11 +142,11 @@ async def lock(ctx, channel: discord.TextChannel=None):
     if ctx.author.guild_permissions.manage_messages:
         if channel == None:
             await ctx.channel.set_permissions(ctx.guild.default_role, read_messages=False, send_messages=False)
-            embed = discord.Embed(title='Lockdown', description=f'<:JC_check:826282165423046666> Locked down - **{ctx.channel.name}**', color=0xE31316)
+            embed = discord.Embed(title='Lockdown', description=f'<a:mp_true:995790931393523862> Locked down - **{ctx.channel.name}**', color=0xE31316)
             await ctx.send(embed=embed)
         else:
             await channel.set_permissions(ctx.guild.default_role, send_messages=False)
-            embed = discord.Embed(title='Lockdown', description=f'<:JC_check:826282165423046666> Locked down - **{channel.name}**', color=0xE31316)
+            embed = discord.Embed(title='Lockdown', description=f'<a:mp_true:995790931393523862> Locked down - **{channel.name}**', color=0xE31316)
             await channel.send(embed=embed)
     else:
         embed = discord.Embed(description="`❌` I'm sorry, but you are not allowed to use this command!\r\n"
@@ -152,11 +160,11 @@ async def unlock(ctx, channel: discord.TextChannel=None):
     if ctx.author.guild_permissions.manage_messages:
         if channel == None:
             await ctx.channel.set_permissions(ctx.guild.default_role, read_messages=False, send_messages=None)
-            embed = discord.Embed(title='Lockdown', description=f'<:JC_check:826282165423046666> Unlocked - **{ctx.channel.name}**', color=0xE31316)
+            embed = discord.Embed(title='Lockdown', description=f'<a:mp_true:995790931393523862> Unlocked - **{ctx.channel.name}**', color=0xE31316)
             await ctx.send(embed=embed)
         else:
             await channel.set_permissions(ctx.guild.default_role, read_messages=False, send_messages=None)
-            embed = discord.Embed(title='Lockdown', description=f'<:JC_check:826282165423046666> Unlocked - **{channel.name}**', color=0xE31316)
+            embed = discord.Embed(title='Lockdown', description=f'<a:mp_true:995790931393523862> Unlocked - **{channel.name}**', color=0xE31316)
             await channel.send(embed=embed)
     else:
         embed = discord.Embed(description="`❌` I'm sorry, but you are not allowed to use this command!\r\n"
@@ -381,7 +389,7 @@ async def sendembed(ctx, hex, *, message):
         embed = discord.Embed(description=message, color=0x2F3136)
         await ctx.send(embed=embed)
         await ctx.message.delete()
-    if hex == 'role' or hex == 'main':
+    if hex == 'role' or hex == 'main' or hex == 'me':
         embed = discord.Embed(description=message, color=ctx.guild.me.color)
         await ctx.send(embed=embed)
         await ctx.message.delete()
@@ -404,9 +412,46 @@ async def selfnick(ctx, *, newnick=None):
         await ctx.message.delete()
 
 
+@slash.slash(name="role",
+             description="Assign or remove a role from a member.",
+             guild_ids=guild_ids,
+             options=[
+                create_option(
+                    name="member",
+                    description="Mention a Member.",
+                    option_type=6,
+                    required=True
+                ),
+                create_option(
+                    name="role",
+                    description="Mention a Role.",
+                    option_type=8,
+                    required=True
+                )
+             ])
+async def _role(ctx: SlashContext, member: discord.Member, role: discord.Role):
+    if ctx.author.guild_permissions.manage_messages:
+         if role in ctx.guild.roles:
+            if ctx.author.top_role.position-1 >= role.position:
+                botrole = ctx.guild.me
+                if role in member.roles:
+                    await member.remove_roles(role)
+                    embed = discord.Embed(description=f'`✅` {role.mention} has been removed from {member.mention}.', color=ctx.guild.me.color)
+                    embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
+                    await ctx.send(embed=embed)
+                else:
+                    await member.add_roles(role)
+                    embed = discord.Embed(description=f'`✅` {role.mention} was added to {member.mention}.', color=ctx.guild.me.color)
+                    embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
+                    await ctx.send(embed=embed)
+            else:
+                embed = discord.Embed(description=f'`❌` This role is too powerful to manage.\r\nPlease ask a senior team member or the owner for help.', color=0xff0000)
+                embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
+                await ctx.send(embed=embed)
+
 
 @client.command(name='role')
-async def role(ctx, member: discord.Member, role: discord.Role, time: int=None):
+async def role(ctx, member: discord.Member, *, role: discord.Role):
     if ctx.author.guild_permissions.manage_messages:
         if role in ctx.guild.roles:
             if ctx.author.top_role.position-1 >= role.position:
@@ -450,17 +495,60 @@ async def ping(ctx):
 
 @client.command(name='avatar', aliases=['av'])
 @commands.cooldown(1, 10, type=BucketType.user)
-async def avatar(ctx, user: discord.User):
-    if user != None:
-        embed = discord.Embed(title='Avatar', color=ctx.guild.me.color)
-        embed.set_image(url=user.avatar_url)
-        embed.set_author(name=user.name + '#' + user.discriminator, icon_url=user.avatar_url)
-        await ctx.send(embed=embed)
-    else:
-        embed = discord.Embed(title='Avatar', color=ctx.guild.me.color)
-        embed.set_image(url=ctx.author.avatar_url)
-        embed.set_author(name=ctx.author.name + '#' + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
+async def avatar(ctx, user: discord.User=None):
+    if user == None:
+        user = ctx.author
+
+    avatar = user.avatar_url
+    url = f"https://discord.com/api/v8/guilds/{ctx.guild.id}/members/{user.id}"
+    headers = {"Authorization": f"Bot {TOKEN}"}
+    r = requests.get(url, headers=headers)
+    response = r.json()
+    avname = response['avatar']
+    if avname != None:
+        avformat = 'webp'
+        if avname[:2] == 'a_':
+            avformat = 'gif'
+        avatar = f"https://cdn.discordapp.com/guilds/{ctx.guild.id}/users/{user.id}/avatars/{avname}.{avformat}?size=512"
+        pass
+
+    embed = discord.Embed(title='Avatar', color=ctx.guild.me.color)
+    embed.set_image(url=avatar)
+    embed.set_author(name=user.name + '#' + user.discriminator, icon_url=user.avatar_url)
+    await ctx.send(embed=embed)
+
+
+@client.command(name='banner', aliases=['avb', 'avbanner'])
+@commands.cooldown(1, 15, type=BucketType.user)
+async def banner(ctx, user: discord.User=None):
+    if user == None:
+        user = ctx.author
+    url = f"https://discord.com/api/v8/users/{user.id}"
+    headers = {"Authorization": f"Bot {TOKEN}"}
+    r = requests.get(url, headers=headers)
+    response = r.json()
+    bannername = response['banner']
+    bannerformat = 'png'
+    if bannername[:2] == 'a_':
+        bannerformat = 'gif'
+    banner = f"https://cdn.discordapp.com/banners/{user.id}/{bannername}.{bannerformat}?size=4096"
+
+    url = f"https://discord.com/api/v8/guilds/{ctx.guild.id}/members/{user.id}"
+    headers = {"Authorization": f"Bot {TOKEN}"}
+    r = requests.get(url, headers=headers)
+    response = r.json()
+    bannername = response['banner']
+    if bannername != None:
+        bannerformat = 'webp'
+        if bannername[:2] == 'a_':
+            bannerformat = 'gif'
+        banner = f"https://cdn.discordapp.com/guilds/{ctx.guild.id}/users/{user.id}/avatars/{avname}.{avformat}?size=512"
+        pass
+
+    embed = discord.Embed(title='Banner', color=ctx.guild.me.color)
+    embed.set_image(url=banner)
+    embed.set_author(name=user.name + '#' + user.discriminator, icon_url=user.avatar_url)
+    await ctx.send(embed=embed)
 
 
 @client.command(name='userinfo', aliases=['whois'])
